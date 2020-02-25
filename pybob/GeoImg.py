@@ -52,7 +52,16 @@ def get_file_info(in_filestring):
 def int_pts(myins):
     pt, ij, X, Y, z, mode = myins            
     try:
-        zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
+        x=X.ravel()              #Flat input into 1d vector
+        y=Y.ravel()
+        z=z.ravel()
+        x=list(x[~np.isnan(z)])   #eliminate any NaN
+        y=list(y[~np.isnan(z)])
+        z=list(z[~np.isnan(z)])
+        
+        zint = griddata((x,y), z, pt, method=mode)
+        
+        # zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
     except:
         zint = np.nan
     return zint
