@@ -363,7 +363,7 @@ class GeoImg(object):
 
         return fig
 
-    def write(self, outfilename, out_folder=None, driver='GTiff', dtype=None, bands=None):
+    def write(self, outfilename, out_folder=None, driver='GTiff', dtype=None, bands=None, creation_opt=None):
         """
         Write GeoImg to a gdal-supported raster file.
         
@@ -374,11 +374,13 @@ class GeoImg(object):
             Options include: HDF4, HDF5, JPEG, PNG, JPEG2000 (if enabled). See gdal docs for more options.
         :param datatype: Type of data to write the raster as. Check GeoImg.numpy2gdal.keys() to see numpy data types implemented.
         :param bands: Specify band(s) to write to file. Default behavior is all bands.
+        :param creation_opt: Specify gdal creation options to use. For example in cases of compression. e.g. creation_opt=['COMPRESS=LZW','BIGTIFF=YES']
         :type outfilename: str
         :type out_folder: str
         :type driver: str
         :type datatype: numpy datatype
         :type bands: array-like
+        :type creation_opt: list
         """
         if dtype is None:
             dtype = self.dtype
@@ -395,9 +397,12 @@ class GeoImg(object):
 
         if out_folder is None:
             outfilename, out_folder = get_file_info(outfilename)
+        
+        if creation_opt is None:
+            out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, numpy2gdal[dtype])
+        else:
+            out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, numpy2gdal[dtype], creation_opt)
             
-        out = driver.Create(os.path.sep.join([out_folder, outfilename]), ncols, nrows, nband, numpy2gdal[dtype])
-
         setgeo = out.SetGeoTransform(self.gt)
         setproj = out.SetProjection(self.proj_wkt)
         nanmask = np.isnan(self.img)
@@ -994,9 +999,11 @@ class GeoImg(object):
         # should have a size of two. in which case, we wrap it in a list.
         if np.array(pts).size == 2:
             pts = [pts]
-
+            
+        revert_code = False  
         if self.is_area():
-            self.to_point()            
+            self.to_point()
+            revert_code = True    
             
         xx, yy = self.xy(ctype='center', grid=False)
         
@@ -1015,6 +1022,10 @@ class GeoImg(object):
         # myout = np.asarray([int_pts(myin,nsize,mode) for myin in myins])
         pool = Pool(6)
         # return np.asarray([int_pts(pt,self,nsize,mode) for pt in pts])
+        
+        if revert_code is True:
+            self.to_area()
+            
         return np.asarray(pool.map(int_pts,myins))
 
     def outside_image(self, ij, index=True):
