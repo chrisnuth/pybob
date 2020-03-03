@@ -13,6 +13,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
 from multiprocessing import Pool
+import gc
 
 numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gdal.GDT_Int16,
               np.float32: gdal.GDT_Float32, np.float64: gdal.GDT_Float64, 
@@ -62,6 +63,7 @@ def int_pts(myins):
         zint = griddata((x,y), z, pt, method=mode)
         
         # zint = griddata((X.flatten(), Y.flatten()), z.flatten(), pt, method=mode)
+        gc.collect()
     except:
         zint = np.nan
     return zint
@@ -979,7 +981,7 @@ class GeoImg(object):
                 rpts.append(zint)
         return np.array(rpts)
 
-    def raster_points2(self, pts, nsize=1, mode='linear'):
+    def raster_points2(self, pts, nsize=1, mode='linear',pool_size=6):
         """Interpolate raster values at a given point, or sets of points using multiprocessing for speed.
 
         :param pts: Point(s) at which to interpolate raster value. If points fall outside
@@ -988,9 +990,11 @@ class GeoImg(object):
         :param mode: One of 'linear', 'cubic', or 'quintic'. Determines what type of spline is
             used to interpolate the raster value at each point. For more information, see 
             scipy.interpolate.interp2d.
+        :param pool_size: Number of cores to use. 
         :type pts: array-like
         :type nsize: int
         :type mode: str
+        :type pool_size: int
 
         :returns rpts: Array of raster value(s) for the given points.
         """
@@ -1020,7 +1024,7 @@ class GeoImg(object):
         myins = [getgrids((self, pt, nsize, mode)) for pt in pts]
         # print("half way")
         # myout = np.asarray([int_pts(myin,nsize,mode) for myin in myins])
-        pool = Pool(6)
+        pool = Pool(pool_size)
         # return np.asarray([int_pts(pt,self,nsize,mode) for pt in pts])
         
         if revert_code is True:
