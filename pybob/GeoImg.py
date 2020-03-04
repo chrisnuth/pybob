@@ -26,7 +26,7 @@ lsat_sensor = {'C': 'OLI/TIRS', 'E': 'ETM+', 'T': 'TM', 'M': 'MSS', 'O': 'OLI', 
 mem = virtual_memory().total/1E6
 if mem < 10000:
     memset = 4000
-elif mem >= 10000 & mem < 50000:
+elif mem >= 10000 and mem < 50000:
     memset = 12000
 else:
     memset = 40000
