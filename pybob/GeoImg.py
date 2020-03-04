@@ -13,6 +13,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from scipy.interpolate import griddata
 from scipy.spatial import ConvexHull
 from multiprocessing import Pool
+from psutil import virtual_memory
 import gc
 
 numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gdal.GDT_Int16,
@@ -22,7 +23,16 @@ numpy2gdal = {np.uint8: gdal.GDT_Byte, np.uint16: gdal.GDT_UInt16, np.int16: gda
 
 lsat_sensor = {'C': 'OLI/TIRS', 'E': 'ETM+', 'T': 'TM', 'M': 'MSS', 'O': 'OLI', 'TI': 'TIRS'}
 
-
+mem = virtual_memory().total/1E6
+if mem < 10000:
+    memset = 4000
+elif mem >= 10000 & mem < 50000:
+    memset = 12000
+else:
+    memset = 40000
+    
+gdal.SetCacheMax(int(memset*1E6))
+    
 def parse_landsat(gname):
     attrs = []
     if len(gname.split('_')) == 1:
