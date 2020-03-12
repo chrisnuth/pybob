@@ -140,7 +140,7 @@ def main():
     for ix in np.arange(0,len(mynames)):
         myDEMs[ix].write(mynames[ix])
     # get projection information
-    myproj = myDEMs[0].proj
+    myproj = myDEMs[0].proj4
     
     # DIDNT WORK ON WINDOWS; TRY AGAIN ON LINUX
     # myDEMs=myDEMs[:15]

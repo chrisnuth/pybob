@@ -123,6 +123,7 @@ def create_stable_mask(img, mask1, mask2):
     """
     # if we have no masks, just return an array of true values
     if mask1 is None and mask2 is None:
+        gc.collect()
         return np.ones(img.img.shape) == 0  # all false, so nothing will get masked.
     elif mask1 is not None and mask2 is None:  # we have a glacier mask, not land
 
@@ -148,6 +149,7 @@ def create_stable_mask(img, mask1, mask2):
             mask = myRaster.ReadAsArray(0, 0, Xsize, Ysize)
         else:
             mask = create_mask_from_shapefile(img, mask2)
+        gc.collect()
         return np.logical_not(mask)  # false where there's land, true where there isn't
     else:  # if none of the above, we have two masks.
         # implement option if either or, or both mask are given as rasters. 
@@ -188,6 +190,7 @@ def create_stable_mask(img, mask1, mask2):
         else:
             gmask = create_mask_from_shapefile(img, mask1)
             lmask = create_mask_from_shapefile(img, mask2)
+        gc.collect()
         return np.logical_or(gmask, np.logical_not(lmask))  # true where there's glacier or water
 
 
@@ -333,7 +336,7 @@ def coreg_fitting(xdata, ydata, sdata, title, pp=None):
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
     plt.text(0.05, 0.05, '$\Delta$z: ' + ('{:.1f} m'.format(zadj)).rjust(numwidth),
              fontsize=12, fontweight='bold', color='red', family='monospace', transform=plt.gca().transAxes)
-    
+
     gc.collect()
     if pp is not None:
         pp.savefig(fig, dpi=200)
@@ -351,7 +354,7 @@ def final_histogram(dH0, dHfinal, pp=None):
 
     dH0 = np.ma.masked_invalid(dH0)
     dHfinal = np.ma.masked_invalid(dHfinal)
-    
+
     dH0 = np.squeeze(np.ma.masked_invalid(dH0[np.ma.less(np.ma.abs(dH0),np.ma.std(dH0) * 3)]))
     dHfinal = np.squeeze(np.ma.masked_invalid(dHfinal[np.ma.less(np.ma.abs(dHfinal),np.ma.std(dHfinal) * 3)]))
 
@@ -361,15 +364,14 @@ def final_histogram(dH0, dHfinal, pp=None):
     stats0 = [np.ma.mean(dH0), np.ma.median(dH0), np.ma.std(dH0), RMSE(dH0), np.ma.sum(np.isfinite(dH0))]
     stats_fin = [np.ma.mean(dHfinal), np.ma.median(dHfinal), np.ma.std(dHfinal), RMSE(dHfinal), np.ma.sum(np.isfinite(dHfinal))]
 
-    
+
     if (np.less(stats0[2],1)):
         myrange = (-4,4)
     elif np.logical_and(np.greater(stats0[2],1),np.less(stats0[2],5)):
         myrange = (-25,25)
     else:
-        myrange = (-60, 60)        
+        myrange = (-60, 60)
 
-    
     j1, j2 = np.histogram(dH0.compressed(), bins=100, range=myrange)
     k1, k2 = np.histogram(dHfinal.compressed(), bins=100, range=myrange)
 
@@ -580,7 +582,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     else:
         this_slave = slaveDEM.reproject(masterDEM)
         this_slave.mask(stable_mask)
-        
+
     plt.close('all')
     while mythresh > 2 and magnthresh > magnlimit:
         mycount += 1
@@ -698,6 +700,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
                 dx, dy, dz = coreg_fitting(xdata, ydata, sdata, mytitle2, pp)
                 dHfinal = dH
         plt.close('all')
+        gc.collect()
     # Create final histograms pre and post coregistration
     # shift = [tot_dx, tot_dy, tot_dz]  # commented because it wasn't actually used.
     stats_final, stats_init = final_histogram(dH0, dHfinal, pp=pp)
@@ -767,7 +770,7 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
     plt.close("all")
 
     out_offs = [tot_dx, tot_dy, tot_dz]
-    
-    gc.collect() # try releasing memory!
+
+    gc.collect()  # try releasing memory!
     if return_var:
         return masterDEM, outslave, out_offs, stats_final
