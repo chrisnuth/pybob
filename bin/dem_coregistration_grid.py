@@ -140,7 +140,7 @@ def main():
     for ix in np.arange(0,len(mynames)):
         myDEMs[ix].write(mynames[ix])
     # get projection information
-    myproj = myDEMs[0].proj4
+    myproj = myDEMs[0].proj_wkt
     
     # DIDNT WORK ON WINDOWS; TRY AGAIN ON LINUX
     # myDEMs=myDEMs[:15]
@@ -161,7 +161,7 @@ def main():
         d.update(arg_dict)
 
     # Iterate lists using parallel processors
-    pool = mp.Pool(processes=20)
+    pool = mp.Pool(processes=25)
     pool.map(batch_wrapper, u_args)
     pool.close()
 
