@@ -17,7 +17,9 @@ from pybob.GeoImg import GeoImg
 from pybob.ICESat import ICESat
 from pybob.image_tools import create_mask_from_shapefile
 from pybob.plot_tools import plot_shaded_dem
+from psutil import virtual_memory
 import gc
+
 
 def get_slope(geoimg, alg='Horn'):
     """
@@ -469,6 +471,15 @@ def dem_coregistration(masterDEM, slaveDEM, glaciermask=None, landmask=None, out
         If co-registration fails (i.e., there are too few acceptable points to perform co-registration), then returns
         original master and slave DEMs, with offsets set to -1.
     """
+    # Set max cache on Gdal
+    mem = virtual_memory().total / 1E6
+    if mem < 10000:
+        memset = 4000
+    elif 10000 <= mem < 50000:
+        memset = 12000
+    else:
+        memset = 20000
+    gdal.SetCacheMax(int(memset * 1E6))
 
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(outdir)
