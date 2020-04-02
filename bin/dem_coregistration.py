@@ -23,6 +23,8 @@ def _argparser():
                         help="Write full extent of master DEM and shifted slave DEM. [False].")
     parser.add_argument('-g', '--alg', type=str, default='Horn',
                         help="Algorithm to calculate slope, aspect. One of 'ZevenbergenThorne' or 'Horn'. [Horn]")
+    parser.add_argument('-m', '--mem', action='store_false', default='False',
+                        help="Do not write anything to disk [False]")
     return parser
 
 
@@ -35,7 +37,7 @@ def main():
     args = parser.parse_args()
     master, coreg_slave, _ = dem_coregistration(args.masterdem, args.slavedem,
                                                 glaciermask=args.mask1, landmask=args.mask2,
-                                                outdir=args.outdir, pts=args.icesat, full_ext=args.full_ext)
+                                                outdir=args.outdir, pts=args.icesat, full_ext=args.full_ext, inmem=args.mem)
 
 
 if __name__ == "__main__":

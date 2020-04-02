@@ -163,7 +163,7 @@ def main():
     # Iterate lists using parallel processors
     num_cores = mp.cpu_count()-2
     pool = mp.Pool(processes=num_cores, maxtasksperchild=1)
-    pool.map(batch_wrapper, u_args, chunksize=1)
+    pool.starmap(batch_wrapper, u_args, chunksize=1)
     pool.close()
     pool.join()
     pool.terminate()
