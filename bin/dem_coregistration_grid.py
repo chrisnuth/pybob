@@ -14,7 +14,7 @@ from scipy.interpolate import griddata
 
 def batch_wrapper(arg_dict):
     return (dem_coregistration(**arg_dict))
-
+ 
 
 def _argparser():
     parser = argparse.ArgumentParser(description="""Iteratively calculate co-registration parameters for sub-grids of two DEMs, as seen in `Nuth and Kääb (2011)`_.
@@ -65,13 +65,13 @@ def main():
         myDEMs = myDEM.subimages(tx,Ny=ty)
         
         # clear the list for empty DEMs
-        myDEMs = [tDEM for tDEM in myDEMs if (np.sum(~np.isnan(tDEM.img)) > 1000)]  
+        myDEMs = [tDEM for tDEM in myDEMs if (np.sum(~np.isnan(tDEM.img)) > 1000)]
     
         return myDEMs
 
     def read_shift_params(filename):
         with open(filename) as f:
-            lines = f.readlines()      
+            lines = f.readlines()
         return np.fromstring(lines[-2],dtype=np.float,sep="\t")
     
     def read_stats_file(filename):
@@ -101,7 +101,7 @@ def main():
                         temp[:]=np.nan
                         data_out.append(np.concatenate((xy,shift_params,temp)))
                     myrow += 1
-            
+
 #        dd = np.asarray(data_out)
 #        plt.plot(dd[:,0],dd[:,1],'s')
         return np.asarray(data_out)
@@ -110,7 +110,7 @@ def main():
         driver = "GTIFF"
         datatype=gdal.GDT_Float32
         drv = gdal.GetDriverByName(driver)
-        
+
         newGdal = drv.Create(filename, mymat.shape[1], mymat.shape[0], 1, datatype)
         newgt = (myextent[0], myres, 0, myextent[3], 0, -myres)
         wa = newGdal.GetRasterBand(1).WriteArray(np.flipud(mymat))
@@ -118,11 +118,11 @@ def main():
         sp = newGdal.SetProjection(myproj)
         newGdal.FlushCache()
         del newGdal
-        pass 
+        pass
 
     # Divide SLAVE DEM into grid for co-registration
     myDEMs = collect_subimages(args.slavedem,args.mysize)
-       
+
     # if the output directory does not exist, create it.
     outdir = os.path.abspath(args.outdir)
     try:
@@ -135,13 +135,13 @@ def main():
     # generate list of output directories 
     mydirs = [os.path.join(args.outdir,gen_outdir_name(tDEM)) for tDEM in myDEMs]
     mynames = [os.path.join(args.outdir,gen_outdir_name(tDEM)+".tif") for tDEM in myDEMs]
-    
+
     # write out temporary versions of the DEM subimages
     for ix in np.arange(0,len(mynames)):
         myDEMs[ix].write(mynames[ix])
     # get projection information
     myproj = myDEMs[0].proj_wkt
-    
+
     # DIDNT WORK ON WINDOWS; TRY AGAIN ON LINUX
     # myDEMs=myDEMs[:15]
     # mydirs=mydirs[:15]
@@ -150,31 +150,34 @@ def main():
     # starting with the common arguments (master dem, glacier mask, etc.)
     # dem_coregistration(masterDEM, slaveDEM, glaciermask=None,
     # landmask=None, outdir='.', pts=False, full_ext=False, return_var=True):
-    arg_dict = {'masterDEM': args.masterdem, 
-                'glaciermask': args.mask1, 
-                'landmask': args.mask2, 
-                'pts': args.icesat, 
-                'full_ext': args.full_ext, 
+    arg_dict = {'masterDEM': args.masterdem,
+                'glaciermask': args.mask1,
+                'landmask': args.mask2,
+                'pts': args.icesat,
+                'full_ext': args.full_ext,
                 'return_var': False}
     u_args = [{'outdir': mydirs[ix], 'slaveDEM': mynames[ix]} for ix in np.arange(0,len(myDEMs))]
     for d in u_args:
         d.update(arg_dict)
 
     # Iterate lists using parallel processors
-    pool = mp.Pool(processes=25)
-    pool.map(batch_wrapper, u_args)
+    num_cores = mp.cpu_count()-2
+    pool = mp.Pool(processes=num_cores, maxtasksperchild=1)
+    pool.map(batch_wrapper, u_args, chunksize=1)
     pool.close()
+    pool.join()
+    pool.terminate()
 
     # remove all temporary tif files
     for ff in glob.glob(os.path.join(outdir,"**","*.tif"), recursive=True):
         os.remove(ff)
-    
+
 
     # def gather_results():
     # fdsa
     dd = gather_results(outdir)
     np.savetxt(os.path.sep.join([outdir, 'Gridded_Coreg_Parameters.txt']),dd,fmt='%f',delimiter=',')
-    
+
     # define the grid, was complicated due to different sizes of the subimages. 
     myxsize = np.unique(np.diff(np.unique(dd[:,0])))
     myysize = np.unique(np.diff(np.unique(dd[:,1])))
@@ -183,9 +186,9 @@ def main():
                 np.min(dd[:,1])-mysize/2, np.max(dd[:,1])+mysize/2]
     xgrid = np.arange(np.min(dd[:,0]),np.max(dd[:,0])+1,mysize)
     ygrid = np.arange(np.min(dd[:,1]),np.max(dd[:,1])+1,mysize)
-    
+
     X, Y = np.meshgrid(xgrid,ygrid)
-    
+
     # Interpolate    
     dx = griddata((dd[:,:2]),dd[:,2],(X,Y))
     dy = griddata((dd[:,:2]),dd[:,3],(X,Y))
@@ -219,6 +222,7 @@ def main():
 
 
 if __name__ == "__main__":
+    mp.freeze_support()
     main()
     #    u_args = main()
 

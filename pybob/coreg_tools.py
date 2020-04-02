@@ -9,7 +9,7 @@ import errno
 from osgeo import gdal
 import numpy as np
 import matplotlib.pylab as plt
-# plt.switch_backend('agg')
+plt.switch_backend('agg')
 import scipy.optimize as optimize
 from matplotlib.backends.backend_pdf import PdfPages
 from mpl_toolkits.axes_grid1 import make_axes_locatable

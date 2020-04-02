@@ -326,6 +326,24 @@ def splitter(img, nblocks, overlap=0):
 
     return blocks
 
+def stitcher2(outputs,nblocks,overlap=0):
+    stitched_arrays = []  # create an empty list to put our stitched results in
+    if np.array(nblocks).size == 1:
+        nblocks = np.array([nblocks, nblocks])
+
+    for out in range(len(outputs[0])):
+        # print(out)
+        stitched_arrays.append([])
+        outarrays.append([])
+        for j in range(nblocks[0]):
+            stitched_arrays[out].append(outputs[j*nblocks[0]][out])
+            for i in range(1, nblocks[1]):
+                outind = i + j*nblocks[0]
+                stitched_arrays[out][j] = np.vstack(stitched_arrays[out][j], outputs[outind][out])
+        stitched_arrays[out] = np.hstack(stitched_arrays[out])
+        outarrays[out] = np.zeros((stitched_arrays[out].shape[0]+2*overlap, stitched_arrays[out].shape[1]+2*overlap))
+        outarrays[out] = stitched_arrays[out]
+
 
 def stitcher(outputs, nblocks, overlap=0):
     stitched_arrays = []  # create an empty list to put our stitched results in
@@ -335,7 +353,9 @@ def stitcher(outputs, nblocks, overlap=0):
     if np.array(nblocks).size == 1:
         nblocks = np.array([nblocks, nblocks])
 
+
     for out in range(len(outputs[0])):
+        # print(out)
         stitched_arrays.append([])
         outarrays.append([])
         for j in range(nblocks[0]):
